@@ -37,7 +37,8 @@ class QueryRunner:
     def read_table(self, table_name: str) -> pd.DataFrame:
         return self.execute(
             query=self._read_table_template.format(table_name=table_name),
-            fetch=True
+            fetch=True,
+            convert_to_pandas=True,
         )
 
     def create_table_like(self, new_table: str, origin_table: str) -> None:
@@ -70,10 +71,10 @@ class QueryRunner:
         pass
 
     @abc.abstractmethod
-    def _execute(self, *, query: str, fetch: bool = False):
+    def _execute(self, *, query: str, fetch: bool = False, convert_to_pandas=False):
         pass
 
-    def execute(self, *, query: str, fetch: bool = False) -> Optional[pd.DataFrame]:
+    def execute(self, *, query: str, fetch: bool = False, convert_to_pandas=False) -> Optional[pd.DataFrame]:
         if self.debug:
             logging.info(query)
-        return self._execute(query=query, fetch=fetch)
+        return self._execute(query=query, fetch=fetch, convert_to_pandas=convert_to_pandas)

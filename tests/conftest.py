@@ -32,7 +32,7 @@ def hive_cursor(mocker, hive):
 
 
 @pytest.fixture
-def hive_runner(mocker):
+def hive_runner():
     return HiveRunner(
         config={
             'host': 'somehost',

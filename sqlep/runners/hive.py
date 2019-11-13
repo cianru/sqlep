@@ -61,7 +61,7 @@ def _get_projection(df: pd.DataFrame, part_names, info: Dict[str, Dict[str, Any]
 
 class HiveRunner(QueryRunner):
     _drop_table_if_exists_template = 'DROP TABLE IF EXISTS {table_name}'
-    _create_table_like_template = 'CREATE TABLE IF NOT EXISTS {new_table} LIKE {new_table}'
+    _create_table_like_template = 'CREATE TABLE IF NOT EXISTS {new_table} LIKE {origin_table}'
     _add_column_template = 'ALTER TABLE {table_name} ADD COLUMNS (`{column_name}` {column_type})'
 
     def connect(self, *args, **kwargs) -> Connection:
@@ -121,11 +121,15 @@ class HiveRunner(QueryRunner):
 
         self.execute(query=query)
 
-    def _execute(self, *, query: str, fetch: bool = False) -> Optional[pd.DataFrame]:
+    def _execute(self, *, query: str, fetch: bool = False, convert_to_pandas=False) -> Optional[pd.DataFrame]:
         with self._connection.cursor() as cursor:
             cursor.execute(query)
             if fetch:
-                return pd.DataFrame(
-                    cursor.fetchall(),
-                    columns=[t[0].split('.')[-1] for t in cursor.description]
-                )
+                fetched = cursor.fetchall()
+                if convert_to_pandas:
+                    return pd.DataFrame(
+                        fetched,
+                        columns=[t[0].split('.')[-1] for t in cursor.description]
+                    )
+                else:
+                    return fetched

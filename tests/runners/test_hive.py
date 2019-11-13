@@ -23,6 +23,39 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
     )
 
 
+@pytest.mark.parametrize('field_type', ['int', 'string', 'date', 'timestamp', 'interval', 'bigint', 'decimal',
+                                        'double', 'float'])
+def test_write_default_values(mocker, tmpdir, hive_cursor, field_type, hive_runner):
+    # arrange
+    hive_cursor.fetchall.return_value = [
+        ('field1', 'int', ''),
+        ('field2', field_type, ''),
+        ('field3', 'string', '')
+    ]
+
+    test_file = tmpdir.join('test.csv')
+    test_file.write('field1,field3\n1,string')
+
+    # act
+    run_test_query(
+        query='select 1',
+        expected={},
+        tables={'expected.table': test_file},
+        runner=hive_runner,
+        test_schema='tezt'
+    )
+
+    # assert
+    assert hive_cursor.execute.mock_calls == [
+        mocker.call('DROP TABLE IF EXISTS tezt.expected_table'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.expected_table LIKE expected.table'),
+        mocker.call('DESC tezt.expected_table'),
+        mocker.call('INSERT INTO TABLE tezt.expected_table SELECT 1, NULL, \'string\' FROM tezt.dummy'),
+        mocker.call('select 1'),
+        mocker.call('DROP TABLE IF EXISTS tezt.expected_table')
+    ]
+
+
 @pytest.mark.parametrize('field_type, csv_line, projection1, projection2', [
     ('array<string>', '1,\'""\'\n2,\'"1","2","3"\'', '1, array("")', '2, array("1","2","3")'),
     ('array<string>', '1,\'\'\n2,\'"1","2","3"\'', '1, array()', '2, array("1","2","3")'),
@@ -34,7 +67,8 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
     ('map<varchar,varchar>', '1,\'\'\n2,\'"1","2"\'', '1, map()', '2, map("1","2")'),
     ('map<varchar,varchar>', '1,NULL\n2,\'"1","2"\'', '1, map()', '2, map("1","2")')
 ])
-def test_write_null_values_in_expected(mocker, tmpdir, hive_cursor, field_type, csv_line, projection1, projection2, hive_runner):
+def test_write_null_values_in_expected(mocker, tmpdir, hive_cursor, field_type, csv_line, projection1, projection2,
+                                       hive_runner):
     # arrange
     hive_cursor.fetchall.return_value = [
         ('field1', 'int', ''),
@@ -74,7 +108,8 @@ def test_write_null_values_in_expected(mocker, tmpdir, hive_cursor, field_type, 
     ('date', '1,NULL\n2,\'2019-01-01\'', '1, NULL', '2, \'2019-01-01\''),
     ('boolean', '1,NULL\n2,true', '1, NULL', '2, true'),
 ])
-def test_write_null_values_in_source(mocker, tmpdir, hive_cursor, field_type, csv_line, projection1, projection2, hive_runner):
+def test_write_null_values_in_source(mocker, tmpdir, hive_cursor, field_type, csv_line, projection1, projection2,
+                                     hive_runner):
     # arrange
     hive_cursor.fetchall.return_value = [
         ('field1', 'int', ''),

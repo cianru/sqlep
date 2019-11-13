@@ -23,6 +23,42 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
     )
 
 
+def test_unicode_in_source_table_partitioned(tmpdir, hive_cursor, mocker, hive_runner):
+    # arrange
+    hive_cursor.fetchall.side_effect = [
+        [
+            ('field1', 'string', ''),
+            ('field2', 'int', ''),
+            ('# Partition Information', None, None),
+            ('# col_name', None, None),
+            ('field2', 'int', ''),
+        ],
+        [(u'Юникод', 1)],
+    ]
+
+    test_file = tmpdir.join('test.csv')
+    test_file.write_binary(u'field1,field2\nЮникод,1'.encode('utf8'))
+
+    # act
+    run_test_query(
+        query='select 1',
+        tables={'source.table': test_file},
+        expected={},
+        runner=hive_runner,
+        test_schema='tezt'
+    )
+
+    assert hive_cursor.execute.mock_calls == [
+        mocker.call('DROP TABLE IF EXISTS tezt.source_table'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.source_table LIKE source.table'),
+        mocker.call('DESC tezt.source_table'),
+        mocker.call('INSERT INTO TABLE tezt.source_table PARTITION (`field2`=1) SELECT ' +
+                    u'\'\u042e\u043d\u0438\u043a\u043e\u0434\' FROM tezt.dummy'),
+        mocker.call('select 1'),
+        mocker.call('DROP TABLE IF EXISTS tezt.source_table')
+    ]
+
+
 def test_unicode_in_expected_table(tmpdir, hive_cursor, hive_runner):
     # arrange
     hive_cursor.fetchall.side_effect = [

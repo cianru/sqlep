@@ -107,10 +107,10 @@ def _raise_exception(*, actual_df: pd.DataFrame, expected_df: pd.DataFrame) -> N
 def _cleanup(*, runner: QueryRunner, tables: Dict[str, str], expected: Dict[str, str], test_schema: str) -> None:
     for name in sorted(set(tables) | set(expected)):
         runner.drop_table_if_exists(
-            table=_get_test_table(table=name, test_schema=test_schema)
+            table_name=_get_test_table(table=name, test_schema=test_schema)
         )
 
     for name in expected:
         runner.drop_table_if_exists(
-            table=_get_expected_table(table=name, test_schema=test_schema)
+            table_name=_get_expected_table(table=name, test_schema=test_schema)
         )

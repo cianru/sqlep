@@ -43,7 +43,7 @@ def run_test_query(
         )
 
         runner.fill_table_from_csv(
-            table=target_table,
+            table_name=target_table,
             csv_filename=csv_filename,
         )
 
@@ -60,13 +60,12 @@ def run_test_query(
             origin_table=table,
         )
         runner.add_column(
-            table=target_table,
+            table_name=target_table,
             column_name=COMMENT_COLUMN,
-            column_type='STRING'  # TODO: in some db there'no string
         )
 
         runner.fill_table_from_csv(
-            table=target_table,
+            table_name=target_table,
             csv_filename=csv_filename
         )
 

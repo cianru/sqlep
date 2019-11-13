@@ -1,10 +1,21 @@
 import re
-from typing import Dict
+from typing import Dict, Callable
 
 import pandas as pd
+import numpy as np
 
-from sqlep.config import ACTUAL_MERGE_COLUMN, EXPECTED_MERGE_COLUMN, MERGE_COLUMN, ASSERT_PREFIX, ACTUAL_ERROR_PREFIX, \
-    COMMENT_COLUMN, ROW_SEP, MAIN_SEP, EXPECTED_ERROR_PREFIX, COMMENT_SEP
+from sqlep.config import (
+    ACTUAL_MERGE_COLUMN,
+    EXPECTED_MERGE_COLUMN,
+    MERGE_COLUMN,
+    ASSERT_PREFIX,
+    ACTUAL_ERROR_PREFIX,
+    COMMENT_COLUMN,
+    ROW_SEP,
+    MAIN_SEP,
+    EXPECTED_ERROR_PREFIX,
+    COMMENT_SEP,
+)
 from sqlep.runners import QueryRunner
 
 
@@ -34,6 +45,13 @@ def _patch_query(*, query: str, test_schema: str) -> str:
     return result
 
 
+def _prepare_df(*, df: pd.DataFrame) -> pd.DataFrame:
+    floating_columns = df.select_dtypes(np.floating).columns.tolist()
+    df = df.round({col: 5 for col in floating_columns})
+    df[MERGE_COLUMN] = 1
+    return df
+
+
 def _drop_df_columns(*, df: pd.DataFrame) -> pd.DataFrame:
     return df.drop(columns=[ACTUAL_MERGE_COLUMN, EXPECTED_MERGE_COLUMN])
 
@@ -44,14 +62,16 @@ def _get_actual_and_expected_difference(
         expected: Dict[str, str],
         test_schema: str
 ) -> (pd.DataFrame, pd.DataFrame):
-    for table, csv_filename in expected.items():
-        actual_df = runner.read_table(
-            table_name=_get_test_table(table=table, test_schema=test_schema)
+    def read_table(*, table_name: str, func: Callable[[str, str], str]) -> pd.DataFrame:
+        return _prepare_df(
+            df=runner.read_table(
+                table_name=func(table=table_name, test_schema=test_schema)
+            )
         )
 
-        expected_df = runner.read_table(
-            table_name=_get_expected_table(table=table, test_schema=test_schema)
-        )
+    for table, csv_filename in expected.items():
+        actual_df = read_table(table_name=table, func=_get_test_table)
+        expected_df = read_table(table_name=table, func=_get_expected_table)
 
         on = [col for col in actual_df.columns.tolist() if col != MERGE_COLUMN]
         join = pd.merge(actual_df, expected_df, how='outer', on=on, suffixes=('_actual', '_expected'))

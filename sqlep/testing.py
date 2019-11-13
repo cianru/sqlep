@@ -82,12 +82,12 @@ def run_test_query(
     if debug:
         logging.info(query)
 
-    runner.execute(query=query)
+    runner.execute(query=_query)
 
     actual_df, expected_df = _get_actual_and_expected_difference(
         runner=runner,
         expected=expected,
-        test_schema=test_schema
+        test_schema=test_schema,
     )
 
     if not debug:

@@ -12,5 +12,4 @@ def query_runner(mocker):
     query_runner.create_table_like.return_value = None
     query_runner.fill_table_from_csv.return_value = None
     query_runner.add_column.return_value = None
-    query_runner.read_table.return_value = []
     yield query_runner

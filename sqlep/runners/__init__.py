@@ -42,7 +42,7 @@ class QueryRunner:
 
     def create_table_like(self, new_table: str, origin_table: str) -> None:
         self.execute(
-            query=self._create_table_like_template(
+            query=self._create_table_like_template.format(
                 new_table=new_table,
                 origin_table=origin_table
             )
@@ -52,7 +52,7 @@ class QueryRunner:
     def add_column(self, table_name: str, column_name: str, column_type: str = 'STRING') -> None:
         self.execute(
             query=self._add_column_template.format(
-                table=table_name,
+                table_name=table_name,
                 column_name=column_name,
                 column_type=column_type
             )

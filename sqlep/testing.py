@@ -25,7 +25,9 @@ def run_test_query(
         test_schema: str,
         debug: bool = False
 ):
-    runner.set_debug(debug)
+    runner.set_debug(
+        debug=debug
+    )
 
     def cleanup():
         _cleanup(runner=runner, tables=tables, expected=expected, test_schema=test_schema)

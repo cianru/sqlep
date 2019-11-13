@@ -62,6 +62,9 @@ def _get_actual_and_expected_difference(
         expected: Dict[str, str],
         test_schema: str
 ) -> (pd.DataFrame, pd.DataFrame):
+    actual_df = pd.DataFrame()
+    expected_df = pd.DataFrame()
+
     def read_table(*, table_name: str, func: Callable[[str, str], str]) -> pd.DataFrame:
         return _prepare_df(
             df=runner.read_table(
@@ -78,7 +81,7 @@ def _get_actual_and_expected_difference(
         expected_df = _drop_df_columns(df=join.loc[join[ACTUAL_MERGE_COLUMN].isnull(), :])
         actual_df = _drop_df_columns(df=join.loc[join[EXPECTED_MERGE_COLUMN].isnull(), :])
 
-        return actual_df, expected_df
+    return actual_df, expected_df
 
 
 def _raise_exception(*, actual_df: pd.DataFrame, expected_df: pd.DataFrame) -> None:

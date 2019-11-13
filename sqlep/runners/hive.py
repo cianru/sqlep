@@ -3,7 +3,7 @@ from typing import Optional, Any, Dict
 
 import pandas as pd
 from pyhive import hive
-from pyhive.hive import Connection, Cursor
+from pyhive.hive import Connection
 
 from sqlep.settings import READ_CSV_KWARGS
 from sqlep.runners import QueryRunner
@@ -41,12 +41,7 @@ def _format_value(column_type: str, value: Any) -> str:
     return str(value)
 
 
-def _get_projection(
-        df: pd.DataFrame,
-        part_names,
-        info: Dict[str, Dict[str, Any]],
-        test_schema: str
-) -> str:
+def _get_projection(df: pd.DataFrame, part_names, info: Dict[str, Dict[str, Any]], test_schema: str) -> str:
     selects = []
 
     for _, row in df.iterrows():

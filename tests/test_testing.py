@@ -32,7 +32,7 @@ def test_run_test_query__results_the_same_and_debug_true__no_exception_raised(mo
     )
 
     # assert
-    query_runner.set_debug.assert_called_once_with(True)
+    query_runner.set_debug.assert_called_once_with(debug=True)
 
     assert query_runner.drop_table_if_exists.mock_calls == [
         mocker.call(table_name='tezt.other_schema_another_table'),
@@ -113,7 +113,7 @@ def test_run_test_query__results_different_and_debug_true__exception_raised(mock
         )
 
     # assert
-    query_runner.set_debug.assert_called_once_with(True)
+    query_runner.set_debug.assert_called_once_with(debug=True)
 
     assert query_runner.drop_table_if_exists.mock_calls == [
         mocker.call(table_name='tezt.other_schema_another_table'),

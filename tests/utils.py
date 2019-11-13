@@ -1,5 +1,4 @@
 import os
-from typing import List, Dict, Any, Tuple
 
 
 def read_sql_file(filename):
@@ -11,8 +10,3 @@ def read_sql_file(filename):
 
 def csv_path(filename):
     return os.path.join(os.path.dirname(os.path.realpath(__file__)), 'csv', filename)
-
-
-def assertItemsEqual(l1, l2):
-    assert len(l1) == len(l2)
-    assert sorted(l1) == sorted(l2)

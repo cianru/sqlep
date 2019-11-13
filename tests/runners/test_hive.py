@@ -23,6 +23,28 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
     )
 
 
+def test_unicode_in_expected_table(tmpdir, hive_cursor, hive_runner):
+    # arrange
+    hive_cursor.fetchall.side_effect = [
+        [('a', 'string', ''), ('b', 'int', '')],
+        [(u'Юникод', 1)],
+        [(u'Юникод', 1)],
+    ]
+    hive_cursor.description = [('a',), ('b',)]
+
+    test_file = tmpdir.join('test_csv')
+    test_file.write(u'a,b\nЮникод,1'.encode('utf8'), mode='wb')
+
+    # act & assert
+    run_test_query(
+        query='select 1',
+        tables={},
+        expected={'expected.table': test_file},
+        runner=hive_runner,
+        test_schema='tezt'
+    )
+
+
 @pytest.mark.parametrize('field_type', ['int', 'string', 'date', 'timestamp', 'interval', 'bigint', 'decimal',
                                         'double', 'float'])
 def test_write_default_values(mocker, tmpdir, hive_cursor, field_type, hive_runner):

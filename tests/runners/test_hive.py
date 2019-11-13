@@ -1,4 +1,4 @@
-import pandas as pd
+import pytest
 
 from sqlep import run_test_query
 
@@ -21,6 +21,46 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
             'tez.queue.name': 'default',
         }
     )
+
+
+@pytest.mark.parametrize('field_type, csv_line, projection1, projection2', [
+    ('array<string>', '1,\'""\'\n2,\'"1","2","3"\'', '1, array("")', '2, array("1","2","3")'),
+    ('array<string>', '1,\'\'\n2,\'"1","2","3"\'', '1, array()', '2, array("1","2","3")'),
+    ('string', '1,NULL\n2,\'string\'', '1, NULL', '2, \'string\''),
+    ('int', '1,NULL\n2,8', '1, NULL', '2, 8'),
+    ('double', '1,NULL\n2,1.598', '1, NULL', '2, 1.598'),
+    ('date', '1,NULL\n2,\'2019-01-01\'', '1, NULL', '2, \'2019-01-01\''),
+    ('boolean', '1,NULL\n2,true', '1, NULL', '2, true'),
+])
+def test_write_null_values_in_source(mocker, tmpdir, hive_cursor, field_type, csv_line, projection1, projection2, hive_runner):
+    # arrange
+    hive_cursor.fetchall.return_value = [
+        ('field1', 'int', ''),
+        ('field2', field_type, '')
+    ]
+
+    test_file = tmpdir.join('test.csv')
+    test_file.write('field1,field2\n{}'.format(csv_line))
+
+    # act
+    run_test_query(
+        query='select 1',
+        tables={'source.table': test_file},
+        expected=dict(),
+        test_schema='tezt',
+        runner=hive_runner,
+    )
+
+    # assert
+    assert hive_cursor.execute.mock_calls == [
+        mocker.call('DROP TABLE IF EXISTS tezt.source_table'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.source_table LIKE source.table'),
+        mocker.call('DESC tezt.source_table'),
+        mocker.call('INSERT INTO TABLE tezt.source_table SELECT {} FROM tezt.dummy '
+                    'UNION ALL SELECT {} FROM tezt.dummy'.format(projection1, projection2)),
+        mocker.call('select 1'),
+        mocker.call('DROP TABLE IF EXISTS tezt.source_table')
+    ]
 
 
 def test_unicode_in_array(mocker, tmpdir, hive_cursor, hive_runner):

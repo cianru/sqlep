@@ -1,4 +1,5 @@
 import abc
+import logging
 from typing import Dict, Any, Callable, Optional
 
 import pandas as pd
@@ -7,10 +8,9 @@ import pandas as pd
 class QueryRunner:
     _read_table_template: str = 'SELECT * FROM {table_name}'
 
-    def __init__(self, config: Dict[str, Any], debug: bool):
+    def __init__(self, config: Dict[str, Any], debug: bool = False):
         self.debug = debug
-        self._connection = None
-        self.connect(config=config)
+        self._connection = self.connect(**config)
 
     @property
     @abc.abstractmethod
@@ -40,7 +40,7 @@ class QueryRunner:
             fetch=True
         )
 
-    def create_table_like(self, new_table: str, origin_table: str):
+    def create_table_like(self, new_table: str, origin_table: str) -> None:
         self.execute(
             query=self._create_table_like_template(
                 new_table=new_table,
@@ -59,10 +59,10 @@ class QueryRunner:
         )
 
     @abc.abstractmethod
-    def connect(self, *, config):
+    def connect(self, *args, **kwargs) -> Any:
         pass
 
-    def set_debug(self, *, debug: bool):
+    def set_debug(self, *, debug: bool) -> None:
         self.debug = debug
 
     @abc.abstractmethod
@@ -70,5 +70,10 @@ class QueryRunner:
         pass
 
     @abc.abstractmethod
-    def execute(self, *, query: str, fetch: bool = False) -> Optional[pd.DataFrame]:
+    def _execute(self, *, query: str, fetch: bool = False):
         pass
+
+    def execute(self, *, query: str, fetch: bool = False) -> Optional[pd.DataFrame]:
+        if self.debug:
+            logging.info(query)
+        return self._execute(query=query, fetch=fetch)

@@ -4,7 +4,7 @@ from typing import Dict, Callable
 import pandas as pd
 import numpy as np
 
-from sqlep.config import (
+from sqlep.settings import (
     ACTUAL_MERGE_COLUMN,
     EXPECTED_MERGE_COLUMN,
     MERGE_COLUMN,

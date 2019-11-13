@@ -11,6 +11,8 @@ setup(
     description='a tool for testing sql queries',
     install_requires=[
         'pandas==0.21.1',
+        'PyHive[hive]==0.6.1',
+        'toml-0.10.0',
         'pytest==5.2.2',
         'pytest-mock==1.11.2',
     ]

@@ -1,7 +1,7 @@
 import logging
 from typing import Dict
 
-from sqlep.config import (
+from sqlep.settings import (
     COMMENT_COLUMN,
 )
 from sqlep.runners import QueryRunner

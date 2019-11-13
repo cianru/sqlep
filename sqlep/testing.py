@@ -3,15 +3,6 @@ from typing import Dict
 
 from sqlep.config import (
     COMMENT_COLUMN,
-    MERGE_COLUMN,
-    ACTUAL_MERGE_COLUMN,
-    EXPECTED_MERGE_COLUMN,
-    MAIN_SEP,
-    ROW_SEP,
-    COMMENT_SEP,
-    ACTUAL_ERROR_PREFIX,
-    ASSERT_PREFIX,
-    EXPECTED_ERROR_PREFIX,
 )
 from sqlep.runners import QueryRunner
 
@@ -19,10 +10,10 @@ from sqlep.utils import (
     _get_test_table,
     _get_expected_table,
     _patch_query,
-    _drop_df_columns,
     _get_actual_and_expected_difference,
     _raise_exception,
-    _cleanup)
+    _cleanup,
+)
 
 
 def run_test_query(
@@ -34,14 +25,14 @@ def run_test_query(
         test_schema: str,
         debug: bool = False
 ):
-    runner.set_debug(
-        debug=debug
-    )
+    runner.set_debug(debug)
 
     def cleanup():
         _cleanup(runner=runner, tables=tables, expected=expected, test_schema=test_schema)
 
     _query = _patch_query(query=query, test_schema=test_schema)
+
+    cleanup()
 
     for table, csv_filename in tables.items():
         target_table = _get_test_table(table=table, test_schema=test_schema)
@@ -69,7 +60,7 @@ def run_test_query(
             origin_table=table,
         )
         runner.add_column(
-            table=table,
+            table=target_table,
             column_name=COMMENT_COLUMN,
             column_type='STRING'  # TODO: in some db there'no string
         )

@@ -62,7 +62,7 @@ def _get_actual_and_expected_difference(
         expected: Dict[str, str],
         test_schema: str
 ) -> (pd.DataFrame, pd.DataFrame):
-    def read_table(*, table_name: str, func: Callable[[str, str], str]) -> pd.DataFrame:
+    def read_table(*, table_name: str, func: Callable[[str, str],  str]) -> pd.DataFrame:
         return _prepare_df(
             df=runner.read_table(
                 table_name=func(table=table_name, test_schema=test_schema)
@@ -72,6 +72,7 @@ def _get_actual_and_expected_difference(
     for table, csv_filename in expected.items():
         actual_df = read_table(table_name=table, func=_get_test_table)
         expected_df = read_table(table_name=table, func=_get_expected_table)
+
 
         on = [col for col in actual_df.columns.tolist() if col != MERGE_COLUMN]
         join = pd.merge(actual_df, expected_df, how='outer', on=on, suffixes=('_actual', '_expected'))
@@ -105,7 +106,7 @@ def _raise_exception(*, actual_df: pd.DataFrame, expected_df: pd.DataFrame) -> N
 
 
 def _cleanup(*, runner: QueryRunner, tables: Dict[str, str], expected: Dict[str, str], test_schema: str) -> None:
-    for name in set(tables) | set(expected):
+    for name in sorted(set(tables) | set(expected)):
         runner.drop_table_if_exists(
             table=_get_test_table(table=name, test_schema=test_schema)
         )

@@ -1,6 +1,10 @@
+import pandas as pd
+from io import StringIO
+
 import pytest
 
 from sqlep import run_test_query
+from sqlep.settings import READ_CSV_KWARGS
 from tests.utils import csv_path
 
 
@@ -22,6 +26,52 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
             'tez.queue.name': 'default',
         }
     )
+
+
+@pytest.mark.parametrize('partition_type, csv_line, part', [
+    ('string', '1,1', '\'1\''),
+    ('boolean', '1,false', 'false'),
+    ('boolean', '1,true', 'true'),
+    ('int', '1,1', '1'),
+    ('date', '1,2019-01-01', '\'2019-01-01\''),
+    ('string', '1,06', '\'06\'')
+])
+def test_partition_types_queries(mocker, hive_cursor, partition_type, csv_line, part, hive_runner):
+    # arrange
+    hive_cursor.fetchall.return_value = [
+        ('field1', 'string', ''),
+        ('field2', partition_type, ''),
+        ('# Partition Information', None, None),
+        ('# col_name', None, None),
+        ('field2', partition_type, ''),
+    ]
+    mocker.patch(
+        'sqlep.runners.hive.pd.read_csv',
+        return_value=pd.read_csv(
+            StringIO(csv_line),
+            names=['field1', 'field2'],
+            **READ_CSV_KWARGS
+        )
+    )
+
+    # act
+    run_test_query(
+        query='select 1',
+        tables={'schema.table': 'table.csv'},
+        expected=dict(),
+        runner=hive_runner,
+        test_schema='tezt'
+    )
+
+    # assert
+    assert hive_cursor.execute.mock_calls == [
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.schema_table LIKE schema.table'),
+        mocker.call('DESC tezt.schema_table'),
+        mocker.call(f'INSERT INTO TABLE tezt.schema_table PARTITION (`field2`={part}) SELECT \'1\' FROM tezt.dummy'),
+        mocker.call('select 1'),
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table'),
+    ]
 
 
 def test_df_order(mocker, hive_cursor, hive_runner):

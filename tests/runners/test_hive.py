@@ -1,6 +1,7 @@
 import pytest
 
 from sqlep import run_test_query
+from tests.utils import csv_path
 
 
 def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
@@ -20,6 +21,25 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
         configuration={
             'tez.queue.name': 'default',
         }
+    )
+
+
+def test_df_order(mocker, hive_cursor, hive_runner):
+    # arrange
+    hive_cursor.fetchall.side_effect = [
+        [('a', 'string', ''), ('b', 'integer', '')],
+        [(0, '0'), (1, '1'), (2, '2')],
+        [(0, '0'), (2, '2'), (1, '1')],
+    ]
+    hive_cursor.description = [('a',), ('b',)]
+
+    # act & assert
+    run_test_query(
+        query='select 1',
+        tables=dict(),
+        expected={'schema.expected': csv_path('test_order.csv')},
+        runner=hive_runner,
+        test_schema='tezt'
     )
 
 

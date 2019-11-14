@@ -41,7 +41,7 @@ def _format_value(column_type: str, value: Any) -> str:
     return str(value)
 
 
-def _get_projection(df: pd.DataFrame, part_names, info: Dict[str, Dict[str, Any]], test_schema: str) -> str:
+def _get_projection(*, df: pd.DataFrame, part_names, info: Dict[str, Dict[str, Any]], test_schema: str) -> str:
     selects = []
 
     for _, row in df.iterrows():
@@ -109,14 +109,14 @@ class HiveRunner(QueryRunner):
                 query = u'INSERT INTO TABLE {} PARTITION ({}) {}'.format(
                     table_name,
                     ', '.join(parts_),
-                    _get_projection(rows, part_names, info, test_schema=schema)
+                    _get_projection(df=rows, part_names=part_names, info=info, test_schema=schema)
                 )
                 self.execute(query=query)
 
         else:
             query = u'INSERT INTO TABLE {} {}'.format(
                 table_name,
-                _get_projection(df, part_names, info, test_schema=schema)
+                _get_projection(df=df, part_names=part_names, info=info, test_schema=schema)
             )
             self.execute(query=query)
 

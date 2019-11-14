@@ -239,7 +239,7 @@ def test_types_queries(mocker, hive_cursor, hive_runner, field_type, csv_line, p
         'sqlep.runners.hive.pd.read_csv',
         return_value=pd.read_csv(
             StringIO(csv_line),
-            names=['field1', 'field2'],
+            names=['field'],
             **READ_CSV_KWARGS
         )
     )

@@ -5,10 +5,10 @@ import pytest
 
 from sqlep import run_test_query
 from sqlep.settings import READ_CSV_KWARGS
-from tests.utils import csv_path
+from tests.utils import csv_path, is_subseq
 
 
-def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
+def test_runner_connect_to_hive(hive, hive_runner):
     # arrange & act
     run_test_query(
         query='',
@@ -26,6 +26,244 @@ def test_runner_connect_to_hive(hive, hive_cursor, hive_runner):
             'tez.queue.name': 'default',
         }
     )
+
+
+def test_multiple_table_queries(mocker, hive_cursor, hive_runner):
+    # arrange
+
+    df_test_data = [(str(i), str(i)) for i in range(2)]
+
+    hive_cursor.fetchall.side_effect = [
+        [('field1', 'string', ''), ('field2', 'string', '')],
+        [('field1', 'string', ''), ('field2', 'string', '')],
+        [('field1', 'string', ''), ('field2', 'string', '')],
+        [('field1', 'string', ''), ('field2', 'string', '')],
+        df_test_data,
+        df_test_data,
+        df_test_data,
+        df_test_data,
+    ]
+    hive_cursor.description = [('schema_table1.field1',), ('schema_table1.field2',)]
+    mocker.patch(
+        'sqlep.runners.hive.pd.read_csv',
+        side_effect=[
+            pd.DataFrame(df_test_data, columns=['field1', 'field2']),
+            pd.DataFrame(df_test_data, columns=['field1', 'field2']),
+            pd.DataFrame(df_test_data, columns=['field1', 'field2']),
+            pd.DataFrame(df_test_data, columns=['field1', 'field2']),
+        ]
+    )
+
+    # act
+    run_test_query(
+        query='select 1',
+        tables={'schema.table1': 'table1.csv', 'schema.table2': 'table2.csv'},
+        expected={'schema.expected1': 'expected1.csv', 'schema.expected2': 'expected2.csv'},
+        runner=hive_runner,
+        test_schema='tezt'
+    )
+
+    # assert
+    def assert_is_subseq(l):
+        assert is_subseq(map(mocker.call, l), hive_cursor.execute.mock_calls)
+
+    # schema.table1
+    assert_is_subseq([
+        'DROP TABLE IF EXISTS tezt.schema_table1',
+        'CREATE TABLE IF NOT EXISTS tezt.schema_table1 LIKE schema.table1',
+        'select 1',
+        'SELECT * FROM tezt.schema_expected1',
+        'DROP TABLE IF EXISTS tezt.schema_table1',
+    ])
+
+    # schema.table2
+    assert_is_subseq([
+        'DROP TABLE IF EXISTS tezt.schema_table2',
+        'CREATE TABLE IF NOT EXISTS tezt.schema_table2 LIKE schema.table2',
+        'select 1',
+        'SELECT * FROM tezt.schema_expected2',
+        'DROP TABLE IF EXISTS tezt.schema_table2',
+    ])
+
+    # schema.expected1
+    assert_is_subseq([
+        'DROP TABLE IF EXISTS tezt.schema_expected1',
+        'CREATE TABLE IF NOT EXISTS tezt.schema_expected1 LIKE schema.expected1',
+        'select 1',
+        'SELECT * FROM tezt.schema_expected1',
+        'DROP TABLE IF EXISTS tezt.schema_expected1',
+    ])
+    print(hive_cursor.execute.mock_calls)
+
+    # schema.expected1_expected
+    assert_is_subseq([
+        'DROP TABLE IF EXISTS tezt.schema_expected1_expected',
+        'CREATE TABLE IF NOT EXISTS tezt.schema_expected1_expected LIKE schema.expected1',
+        'ALTER TABLE tezt.schema_expected1_expected ADD COLUMNS (`test_case_comment` STRING)',
+        'DESC tezt.schema_expected1_expected',
+        'INSERT INTO TABLE tezt.schema_expected1_expected SELECT \'0\', \'0\' FROM tezt.dummy ' +
+        'UNION ALL SELECT \'1\', \'1\' FROM tezt.dummy',
+        'select 1',
+        'SELECT * FROM tezt.schema_expected1_expected',
+        'DROP TABLE IF EXISTS tezt.schema_expected1_expected',
+    ])
+
+    # schema.expected2
+    assert_is_subseq([
+        'DROP TABLE IF EXISTS tezt.schema_expected2',
+        'CREATE TABLE IF NOT EXISTS tezt.schema_expected2 LIKE schema.expected2',
+        'select 1',
+        'SELECT * FROM tezt.schema_expected2',
+        'DROP TABLE IF EXISTS tezt.schema_expected2',
+    ])
+    print(hive_cursor.execute.mock_calls)
+
+    # schema.expected2_expected
+    assert_is_subseq([
+        'DROP TABLE IF EXISTS tezt.schema_expected2_expected',
+        'CREATE TABLE IF NOT EXISTS tezt.schema_expected2_expected LIKE schema.expected2',
+        'ALTER TABLE tezt.schema_expected2_expected ADD COLUMNS (`test_case_comment` STRING)',
+        'DESC tezt.schema_expected2_expected',
+        'INSERT INTO TABLE tezt.schema_expected2_expected SELECT \'0\', \'0\' FROM tezt.dummy ' +
+        'UNION ALL SELECT \'1\', \'1\' FROM tezt.dummy',
+        'select 1',
+        'SELECT * FROM tezt.schema_expected2_expected',
+        'DROP TABLE IF EXISTS tezt.schema_expected2_expected',
+    ])
+
+
+def test_source_result_same_queries(mocker, hive_cursor, hive_runner):
+    # arrange
+    df_test_data = [(str(i), str(i)) for i in range(2)]
+
+    hive_cursor.fetchall.side_effect = [
+        [('field1', 'string', ''), ('field2', 'string', '')],
+        [('field1', 'string', ''), ('field2', 'string', '')],
+        df_test_data,
+        df_test_data,
+    ]
+    hive_cursor.description = [('schema.field1',), ('schema.field2',), ]
+    mocker.patch(
+        'sqlep.runners.hive.pd.read_csv',
+        side_effect=[
+            pd.DataFrame(df_test_data, columns=['field1', 'field2']),
+            pd.DataFrame(df_test_data, columns=['field1', 'field2']),
+        ]
+    )
+
+    # act
+    run_test_query(
+        query='select 1',
+        tables={'schema.table': 'table.csv'},
+        expected={'schema.table': 'expected.csv'},
+        runner=hive_runner,
+        test_schema='tezt'
+    )
+
+    # assert
+    assert hive_cursor.execute.mock_calls == [
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table'),
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table_expected'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.schema_table LIKE schema.table'),
+        mocker.call('DESC tezt.schema_table'),
+        mocker.call("INSERT INTO TABLE tezt.schema_table SELECT '0', '0' "
+                    "FROM tezt.dummy UNION ALL SELECT '1', '1' FROM tezt.dummy"),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.schema_table LIKE schema.table'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.schema_table_expected LIKE schema.table'),
+        mocker.call('ALTER TABLE tezt.schema_table_expected ADD COLUMNS (`test_case_comment` STRING)'),
+        mocker.call('DESC tezt.schema_table_expected'),
+        mocker.call('INSERT INTO TABLE tezt.schema_table_expected SELECT \'0\', \'0\' FROM tezt.dummy ' +
+                    'UNION ALL SELECT \'1\', \'1\' FROM tezt.dummy'),
+        mocker.call('select 1'),
+        mocker.call('SELECT * FROM tezt.schema_table'),
+        mocker.call('SELECT * FROM tezt.schema_table_expected'),
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table'),
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table_expected'),
+    ]
+
+
+def test_partitioned_table_queries(mocker, hive_runner, hive_cursor):
+    # arrange
+    hive_cursor.fetchall.return_value = [
+        ('field1', 'int', ''),
+        ('field2', 'string', ''),
+        ('# Partition Information', None, None),
+        ('# col_name', None, None),
+        ('field2', 'string', ''),
+    ]
+    mocker.patch(
+        'sqlep.runners.hive.pd.read_csv',
+        return_value=pd.DataFrame(dict(field1=range(4), field2=list(map(str, [0, 0, 1, 1]))))
+    )
+
+    # act
+    run_test_query(
+        query='select 1',
+        tables={'schema.table': 'table.csv'},
+        expected=dict(),
+        runner=hive_runner,
+        test_schema='tezt',
+    )
+
+    # assert
+    assert hive_cursor.execute.mock_calls == [
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.schema_table LIKE schema.table'),
+        mocker.call('DESC tezt.schema_table'),
+        mocker.call('INSERT INTO TABLE tezt.schema_table PARTITION (`field2`=\'0\') SELECT 0 ' +
+                    'FROM tezt.dummy UNION ALL SELECT 1 FROM tezt.dummy'),
+        mocker.call('INSERT INTO TABLE tezt.schema_table PARTITION (`field2`=\'1\') SELECT 2 ' +
+                    'FROM tezt.dummy UNION ALL SELECT 3 FROM tezt.dummy'),
+        mocker.call('select 1'),
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table'),
+    ]
+
+
+# fixme
+@pytest.mark.parametrize('field_type, csv_line, projection', [
+    ('array<string>', '\'"1","2","3"\'', 'array("1","2","3")'),
+    ('array<string>', '\'\'', 'array()'),
+    ('boolean', 'false', 'false'),
+    ('boolean', 'true', 'true'),
+    ('int', '10', 10),
+    ('double', '0.1', 0.1),
+    ('string', 'text', '\'text\''),
+    ('varchar', 'text', '\'text\''),
+    ('varchar(50)', 'text', '\'text\''),
+    ('map<varchar,varchar>', '\'"a","1","b","3"\'', 'map("a","1","b","3")')
+])
+def test_types_queries(mocker, hive_cursor, hive_runner, field_type, csv_line, projection):
+    # arrange
+    hive_cursor.fetchall.return_value = [
+        ('field', field_type, ''),
+    ]
+    mocker.patch(
+        'sqlep.runners.hive.pd.read_csv',
+        return_value=pd.read_csv(
+            StringIO(csv_line),
+            names=['field1', 'field2'],
+            **READ_CSV_KWARGS
+        )
+    )
+
+    # act
+    run_test_query(
+        query='select 1',
+        tables={'schema.table': 'table.csv'},
+        expected=dict(),
+        runner=hive_runner,
+        test_schema='tezt'
+    )
+
+    # assert
+    assert hive_cursor.execute.mock_calls == [
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table'),
+        mocker.call('CREATE TABLE IF NOT EXISTS tezt.schema_table LIKE schema.table'),
+        mocker.call('DESC tezt.schema_table'),
+        mocker.call(f'INSERT INTO TABLE tezt.schema_table SELECT {projection} FROM tezt.dummy'),
+        mocker.call('select 1'),
+        mocker.call('DROP TABLE IF EXISTS tezt.schema_table')
+    ]
 
 
 @pytest.mark.parametrize('partition_type, csv_line, part', [
@@ -74,7 +312,7 @@ def test_partition_types_queries(mocker, hive_cursor, partition_type, csv_line, 
     ]
 
 
-def test_df_order(mocker, hive_cursor, hive_runner):
+def test_df_order(hive_cursor, hive_runner):
     # arrange
     hive_cursor.fetchall.side_effect = [
         [('a', 'string', ''), ('b', 'integer', '')],

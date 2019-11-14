@@ -96,7 +96,6 @@ class HiveRunner(QueryRunner):
         info = self._get_table_info(table_name=table_name)
         part_names = list(filter(lambda k: info[k]['is_partition'], info.keys()))
         df = pd.read_csv(csv_filename, **READ_CSV_KWARGS)
-        query = None
         if part_names:
             for parts, rows in df.groupby(part_names):
 
@@ -112,14 +111,14 @@ class HiveRunner(QueryRunner):
                     ', '.join(parts_),
                     _get_projection(rows, part_names, info, test_schema=schema)
                 )
+                self.execute(query=query)
 
         else:
             query = u'INSERT INTO TABLE {} {}'.format(
                 table_name,
                 _get_projection(df, part_names, info, test_schema=schema)
             )
-
-        self.execute(query=query)
+            self.execute(query=query)
 
     def _execute(self, *, query: str, fetch: bool = False, convert_to_pandas=False) -> Optional[pd.DataFrame]:
         with self._connection.cursor() as cursor:

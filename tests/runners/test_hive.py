@@ -93,7 +93,6 @@ def test_multiple_table_queries(mocker, hive_cursor, hive_runner):
         'SELECT * FROM tezt.schema_expected1',
         'DROP TABLE IF EXISTS tezt.schema_expected1',
     ])
-    print(hive_cursor.execute.mock_calls)
 
     # schema.expected1_expected
     assert_is_subseq([
@@ -116,7 +115,6 @@ def test_multiple_table_queries(mocker, hive_cursor, hive_runner):
         'SELECT * FROM tezt.schema_expected2',
         'DROP TABLE IF EXISTS tezt.schema_expected2',
     ])
-    print(hive_cursor.execute.mock_calls)
 
     # schema.expected2_expected
     assert_is_subseq([

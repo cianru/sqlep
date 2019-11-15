@@ -13,6 +13,7 @@ from sqlep.utils import (
     _get_actual_and_expected_difference,
     _raise_exception,
     _cleanup,
+    _split_query,
 )
 
 
@@ -32,7 +33,9 @@ def run_test_query(
     def cleanup():
         _cleanup(runner=runner, tables=tables, expected=expected, test_schema=test_schema)
 
-    _query = _patch_query(query=query, test_schema=test_schema)
+    _queries = [
+        _patch_query(query=_query, test_schema=test_schema) for _query in _split_query(query=query)
+    ]
 
     cleanup()
 
@@ -74,7 +77,8 @@ def run_test_query(
     if debug:
         logging.info(query)
 
-    runner.execute(query=_query)
+    for _query in _queries:
+        runner.execute(query=_query)
 
     actual_df, expected_df = _get_actual_and_expected_difference(
         runner=runner,

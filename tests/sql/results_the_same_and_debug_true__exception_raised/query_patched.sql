@@ -8,4 +8,3 @@ LEFT JOIN
     tezt.other_schema_another_table b
 ON
     a.c = b.c
-;

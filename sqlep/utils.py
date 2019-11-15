@@ -1,5 +1,5 @@
 import re
-from typing import Dict, Callable
+from typing import Dict, Callable, List, Generator, Iterator
 
 import pandas as pd
 import numpy as np
@@ -43,6 +43,13 @@ def _patch_query(*, query: str, test_schema: str) -> str:
         )
 
     return result
+
+
+def _split_query(*, query: str) -> Iterator[str]:
+    for q in query.split(';'):
+        stripped = q.strip()
+        if stripped:
+            yield stripped
 
 
 def _prepare_df(*, df: pd.DataFrame) -> pd.DataFrame:

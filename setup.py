@@ -7,7 +7,7 @@ setup(
     url='github.com/cian-github/sqlep',
     license='Apache 2.0',
     author='cian dream team',
-    author_email='ml@cian.ru',
+    author_email='etl@cian.ru',
     description='a tool for testing sql queries',
     install_requires=[
         'pandas==0.21.1',

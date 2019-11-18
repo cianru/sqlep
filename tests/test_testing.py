@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from sqlep.runners import QueryRunner
+from sqlep.runners.query_runner import QueryRunner
 from sqlep.testing import run_test_query
 from tests.utils import read_sql_file, csv_path
 

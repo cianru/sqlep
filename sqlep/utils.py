@@ -16,7 +16,7 @@ from sqlep.settings import (
     EXPECTED_ERROR_PREFIX,
     COMMENT_SEP,
 )
-from sqlep.runners import QueryRunner
+from sqlep.runners.query_runner import QueryRunner
 
 
 def _get_test_table(*, table: str, test_schema: str) -> str:

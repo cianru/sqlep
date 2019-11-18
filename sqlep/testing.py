@@ -4,7 +4,7 @@ from typing import Dict
 from sqlep.settings import (
     COMMENT_COLUMN,
 )
-from sqlep.runners import QueryRunner
+from sqlep.runners.query_runner import QueryRunner
 
 from sqlep.utils import (
     _get_test_table,

@@ -1,6 +1,6 @@
 import pytest
 
-from sqlep.runners import QueryRunner
+from sqlep.runners.query_runner import QueryRunner
 from sqlep.runners.hive import HiveRunner
 
 

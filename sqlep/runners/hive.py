@@ -6,7 +6,7 @@ from pyhive import hive
 from pyhive.hive import Connection
 
 from sqlep.settings import READ_CSV_KWARGS
-from sqlep.runners import QueryRunner
+from sqlep.runners.query_runner import QueryRunner
 
 HIVE_STRING_TIME_DATA_TYPES = (
     'timestamp',

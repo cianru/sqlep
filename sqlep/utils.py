@@ -33,6 +33,7 @@ def _patch_query(*, query: str, test_schema: str) -> str:
     replaces.update(re.findall(r'JOIN\s+(\w+\.\w+)', query))
     replaces.update(re.findall(r'CREATE TABLE IF NOT EXISTS\s+(\w+\.\w+)', query))
     replaces.update(re.findall(r'DROP TABLE\s+(\w+\.\w+)', query))
+    replaces.update(re.findall(r'DROP TABLE IF EXISTS\s+(\w+\.\w+)', query))
 
     result = query
 

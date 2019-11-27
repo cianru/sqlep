@@ -4,7 +4,7 @@ setup(
     name='sqlep',
     version='0.0.1',
     packages=find_packages(),
-    url='github.com/cian-github/sqlep',
+    url='https://github.com/cianru/sqlep',
     license='Apache 2.0',
     author='cian dream team',
     author_email='etl@cian.ru',
@@ -12,7 +12,7 @@ setup(
     install_requires=[
         'pandas==0.21.1',
         'PyHive[hive]==0.6.1',
-        'pytest==5.2.2',
-        'pytest-mock==1.11.2',
+        'pytest>=4.0',
+        'pytest-mock~=1.1.0',
     ]
 )

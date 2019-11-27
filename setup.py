@@ -12,7 +12,7 @@ setup(
     install_requires=[
         'pandas==0.21.1',
         'PyHive[hive]==0.6.1',
-        'pytest==5.2.2',
-        'pytest-mock==1.11.2',
+        'pytest~=5.2.2',
+        'pytest-mock~=1.11.2',
     ]
 )

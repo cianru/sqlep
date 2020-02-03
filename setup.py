@@ -10,7 +10,7 @@ setup(
     author_email='etl@cian.ru',
     description='a tool for testing sql queries',
     install_requires=[
-        'pandas==0.21.1',
+        'pandas==0.24.0',
         'PyHive[hive]==0.6.1',
         'pytest>=4.0',
         'pytest-mock~=1.1.0',
